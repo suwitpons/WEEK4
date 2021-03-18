@@ -46,7 +46,14 @@ DMA_HandleTypeDef hdma_adc1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+uint32_t n = 0;
+uint32_t Time = 0;
 uint32_t ADCData[4] = {0};
+uint16_t press = 0 ;
+uint16_t YourTime = 0;
+uint32_t PassTime = 0;
+uint16_t Timestamp = 0;
+float LEDRandomTime = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,15 +104,28 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 HAL_ADC_Start_DMA(&hadc1, ADCData, 4);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  Time = HAL_GetTick();
+	  if (press == 1 )
+	  {
+		  if (HAL_GetTick() - Timestamp >= LEDRandomTime)
+		  {
+			  Timestamp = HAL_GetTick();
+			  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+			  n = 1;
+			  press = 0;
+		  }
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -193,7 +213,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -293,11 +313,11 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
@@ -315,6 +335,32 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == GPIO_PIN_13)
+	{
+		if(n == 0)
+		{
+			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+			LEDRandomTime = 1000 + ((22695477 * ADCData[0]) + ADCData[1]) % 1000;
+			press = 1;
+		}
+		if (n == 1)
+		{
+			YourTime = Time - Timestamp;
+			n = 0;
+		}
+
+	}
+//	if(GPIO_Pin == GPIO_PIN_13 && press == 1)
+//		{
+//		PassTime = Time - Timestamp;
+//		}
+//	if(GPIO_Pin == GPIO_PIN_13 && press == 1)
+//	{
+//		press = 0;
+//	}
+}
 
 /* USER CODE END 4 */
 
